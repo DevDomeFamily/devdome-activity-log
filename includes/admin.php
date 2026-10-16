@@ -969,6 +969,7 @@ function devdacti_render_page()
     devdacti_db_guard_begin();
     ?>
         <div class="dd-app min-h-screen bg-gray-50 text-[#3c434a] font-sans text-[13px]" data-al-tab="<?php echo esc_attr($tab); ?>">
+            <?php if (function_exists('devdcorev1_analytics_card')) { devdcorev1_analytics_card(); } ?>
             <div class="bg-white border-b border-gray-200 shadow-sm">
                 <div class="max-w-5xl px-6 py-4 flex items-center gap-3" style="flex-wrap:wrap;">
                     <div class="p-1.5 rounded text-white inline-flex" style="background:linear-gradient(135deg,#2563eb,#1d4ed8);"><?php echo wp_kses(devdacti_icon_svg(20), devdacti_kses_svg()); ?></div>

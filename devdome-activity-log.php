@@ -3,7 +3,7 @@
 Plugin Name: DevDome Activity Log: Track WordPress User Activity
 Plugin URI: https://devdome.com/
 Description: A local audit log of logins, content, user, plugin, theme, media, comment and key-setting changes, with atomic failed-login counting and an honest coverage list. Part of the DevDome suite.
-Version: 1.0.1
+Version: 1.0.2
 Author: DevDome
 Author URI: https://devdome.com
 Text Domain: devdome-activity-log
@@ -23,7 +23,7 @@ if (file_exists(__DIR__ . '/wporg-build.php')) {
     require __DIR__ . '/wporg-build.php';
 }
 
-define('DEVDACTI_VERSION', '1.0.1');
+define('DEVDACTI_VERSION', '1.0.2');
 // Storage schema revision. Bumped whenever the events/settings tables change; the migration
 // runner in includes/install.php re-applies the schema on a normal update, not only on activation.
 define('DEVDACTI_SCHEMA', 3);

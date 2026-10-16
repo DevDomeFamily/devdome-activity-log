@@ -9,8 +9,8 @@
  *     where the user downloads the zip and installs it via WP's own uploader. An optional
  *     **Upload a .zip** affordance deep-links WP's native plugin uploader.
  *
- * This file only ever installs from WordPress.org. Self-hosted editions add their own helper file;
- * the WordPress.org build does not contain it.
+ * The self-hosted installer (DevDome update server) lives in hub-install-selfhost.php, which
+ * is NOT shipped in WordPress.org builds; this file only ever installs from WordPress.org.
  */
 
 defined('ABSPATH') || exit;
@@ -50,8 +50,8 @@ if (!function_exists('devdcorev1_hub_upload_url')) {
 }
 
 if (!function_exists('devdcorev1_hub_install_actions')) {
-    /** Action HTML for an "Available" card: a single one-click Install from WordPress.org when the plugin is
-     *  listed there; otherwise a "Learn more" link to the product page (self-hosted editions may add their own helper). */
+    /** Action HTML for an "Available" card: a single one-click Install. Order of preference:
+     *  WP.org (repo-compliant) -> DevDome update server -> a direct zip download (never a 404 page). */
     function devdcorev1_hub_install_actions($row)
     {
         $slug    = isset($row['slug']) ? (string) $row['slug'] : '';
@@ -67,7 +67,7 @@ if (!function_exists('devdcorev1_hub_install_actions')) {
             return '<a class="ddh-btn ddh-btn-solid ddh-install" href="' . esc_url($url) . '">Install</a>';
         }
 
-        // 2) Self-hosted editions only: their helper file, when present, provides this action.
+        // 2) One-click install from the DevDome update server (Pro / not-on-WP.org plugins).
         if (function_exists('devdcorev1_hub_selfhost_install_enabled') && devdcorev1_hub_selfhost_install_enabled() && isset($catalog[$slug]) && devdcorev1_hub_can_install()) {
             $url = wp_nonce_url(
                 add_query_arg(array('page' => DEVDCOREV1_TOOLS_MENU_SLUG, 'devdcorev1_hub_dl_install' => $slug), admin_url('admin.php')),

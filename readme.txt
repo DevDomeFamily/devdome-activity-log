@@ -4,7 +4,7 @@ Tags: activity log, audit log, audit trail, user activity log, activity tracker
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.0.1
+Stable tag: 1.0.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -147,10 +147,18 @@ By default, the address your server saw on the connection. A forwarded header is
 
 == Upgrade Notice ==
 
+= 1.0.2 =
+Self-repair of missing storage. Settings and recorded events are unaffected.
+
 = 1.0.0 =
 Seven separate capabilities, protected event groups, trusted-proxy IP handling, a storage migration that runs on update, and the Abilities API for AI agents. Open the Settings tab once after updating to review retention and the proxy settings.
 
 == Changelog ==
+
+= 1.0.2 =
+* A dismissible note at the top of the settings page mentions the free DevDome Analytics plugin, with a button that opens the plugin installer (or the Analytics screen when it is already active). Dismiss hides it for good.
+* Shared DevDome library 1.7.13: uninstalling the last DevDome plugin also removes the note's dismissal, the update-repair records and the per-user "Report a bug" flag; the visitor-beacon flood guard keeps one short-lived record per address and clears its expired ones itself, and behind Cloudflare it counts per visitor instead of per Cloudflare address.
+* Fixed: when the plugin's settings table is missing although the storage was stamped as current (for example after a database restore), the stamp is dropped so the next load rebuilds the tables instead of failing on every request.
 
 = 1.0.1 =
 * Changed: every markup fragment printed from a variable (the Report this error button, the severity and state badges, the proposed-value attributes) now goes through an escaping function at the point of output, and the admin page is printed directly instead of being buffered and echoed.

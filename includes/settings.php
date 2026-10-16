@@ -32,6 +32,13 @@ function devdacti_get_setting($name, $default = '')
             // next read tries again), and devdacti_policy_readable() says so to anything destructive.
             $GLOBALS['devdacti_cache_failed'] = true;
             unset($GLOBALS['devdacti_cache']);
+            // The table itself is gone (plugin files copied into place or restored without the activation hook,
+            // audit 2026-10-16: a site ran the plugin as active with no tables and a failing query on every
+            // request) while the schema stamp still says "current", so devdacti_maybe_upgrade() never rebuilt
+            // it. Drop the stamp: the next load runs the idempotent install again and stamps only when verified.
+            if (false !== stripos((string) $wpdb->last_error, "doesn't exist") || false !== stripos((string) $wpdb->last_error, 'does not exist')) {
+                delete_option('devdacti_schema_version');
+            }
             return $default;
         }
         $GLOBALS['devdacti_cache_failed'] = false;
