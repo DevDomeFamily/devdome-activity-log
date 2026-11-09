@@ -4,7 +4,7 @@ Tags: activity log, audit log, audit trail, user activity log, activity tracker
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.0.2
+Stable tag: 1.0.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -22,11 +22,15 @@ DevDome Activity Log is a free WordPress activity tracker and user activity log.
 * **Plugins, themes and core:** installs, updates (with the previous and new version when it can be observed), activations, deactivations, deletions, theme switches and core updates. A plugin or theme update after which the installed version did not change is recorded as a failed update; when the previous version could not be observed, an update the upgrader reported as failed is recorded as failed too.
 * **Media and comments:** uploads, deletions and comment status changes (approved, spam, trash, restored).
 * **Settings:** changes to a fixed allowlist of nine important options: site title, site URL, home URL, admin email, open registration, default role, permalink structure, the site time zone and the UTC offset (the clock decides what every stored timestamp means).
+* **Categories, tags and taxonomies:** terms created, renamed, moved or deleted, with the field that changed.
+* **Menus, widgets and the Customizer:** navigation menus created, saved (with the item count) or deleted, widget areas that gained or lost widgets, and every Customizer save with the settings it touched.
+* **WooCommerce, ACF and Yoast SEO** (when installed): order status changes, WooCommerce settings saves (the tab, never the values), ACF field groups saved or deleted, Yoast SEO settings saves (the option and the keys that changed, never the values).
+* **Where it came from:** every row carries its origin: wp-admin, admin AJAX, the REST API, the Abilities API (an AI agent), XML-RPC, a scheduled task, WP-CLI or an application password, which is named. The log can be filtered by origin.
 * **The log itself:** every change to its own policy with the previous and new value, every CSV export, every retention purge, every personal-data erasure and every storage migration. These records cannot be switched off by the settings they describe.
 
 **Not recorded (yet)**
 
-So there is no ambiguity, this plugin does **not** currently record: comment creation, editing or permanent deletion; media edits and file replacements; term, taxonomy, menu, widget, Customizer, block-template or post-meta changes; rolled-back core updates and the reason an update failed (only the fact that it did not complete); application passwords; session destruction; the plugin/theme file editor; capability changes outside roles; network-level multisite actions; WooCommerce or other third-party events; and site options outside the nine-option allowlist.
+So there is no ambiguity, this plugin does **not** currently record: comment creation, editing or permanent deletion; media edits and file replacements; block-template or post-meta changes; individual menu item edits (a menu save is one row); widget settings (only which widget areas changed); rolled-back core updates and the reason an update failed (only the fact that it did not complete); application passwords being created or revoked (their use is named on each row); session destruction; the plugin/theme file editor; capability changes outside roles; network-level multisite actions; third-party events beyond WooCommerce orders and settings, ACF field groups and Yoast SEO settings; and site options outside the nine-option allowlist.
 
 **Concurrency, performance and scale**
 
@@ -147,6 +151,9 @@ By default, the address your server saw on the connection. A forwarded header is
 
 == Upgrade Notice ==
 
+= 1.0.3 =
+Shared DevDome library 1.7.16 (connect request valid for 60 minutes). Logging is unaffected.
+
 = 1.0.2 =
 Self-repair of missing storage. Settings and recorded events are unaffected.
 
@@ -154,6 +161,16 @@ Self-repair of missing storage. Settings and recorded events are unaffected.
 Seven separate capabilities, protected event groups, trusted-proxy IP handling, a storage migration that runs on update, and the Abilities API for AI agents. Open the Settings tab once after updating to review retention and the proxy settings.
 
 == Changelog ==
+
+= 1.0.3 =
+
+* Three new event groups, each a switch on the Settings tab: categories, tags and taxonomies (terms created, renamed, moved, deleted); menus, widgets and the Customizer (menus created, saved, deleted, widget areas changed, Customizer saves with the settings touched); WooCommerce, ACF and Yoast SEO (order status changes, settings saves, field groups saved or deleted). ACF field groups no longer appear as plain post rows.
+* Change origin: a new Origin filter (wp-admin, admin AJAX, REST API, Abilities API, XML-RPC, scheduled task, WP-CLI, application password), the Abilities API is told apart from other REST calls, and a row made through an application password names that password.
+* Shared DevDome library 1.7.17: the connect beacon's flood guard counts an IPv6 visitor per /64 network, and the one-click install of another DevDome plugin verifies the downloaded package against the published checksum before installing.
+* Hardening (security review): an IPv6 attacker is one source per /64 for the failed-login row cap, and past 500 distinct sources in an hour further attempts fold into one "many sources" row; the activity abilities mark visitor-typed text as untrusted data for AI agents.
+* The first activation opens the plugin screen once: the DevDome Account card when the site is not connected yet, the Overview when it is. Bulk activations never redirect.
+* The repair-storage ability is marked as a change that cannot be undone, so an AI assistant connected through MCP asks before running it.
+* Shared DevDome library 1.7.16: the connect request to devdome.com stays valid for 60 minutes instead of 20, and the DevDome Tools page asks the server again while a request this site started is still open, so a connection authorized in a tab that never came back still completes; the Tools page notes when DevDome Analytics is not installed; the Analytics note styles are registered through WordPress instead of a style block in the page; one shared helper reads the visitor address behind a trusted proxy; the AI Assistant is listed in the plugin catalog. After connecting, the screen you land on says which account the site is connected to and the one next step.
 
 = 1.0.2 =
 * A dismissible note at the top of the settings page mentions the free DevDome Analytics plugin, with a button that opens the plugin installer (or the Analytics screen when it is already active). Dismiss hides it for good.

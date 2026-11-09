@@ -125,6 +125,12 @@ function devdacti_log(array $args)
         $object_id    = isset($args['object_id']) ? (int) $args['object_id'] : 0;
         $object_title = devdacti_redact(isset($args['object_title']) ? (string) $args['object_title'] : '');
         $details      = devdacti_redact(isset($args['details']) ? (string) $args['details'] : '');
+        // Change origin (1.0.4): a request authenticated with an application password names the password, so the
+        // reader knows WHICH integration acted, not only that one did.
+        $app_name = devdacti_app_password_name();
+        if ($app_name !== '') {
+            $details = trim($details . ($details !== '' ? '; ' : '') . 'Via application password "' . $app_name . '"');
+        }
         $counter      = isset($args['counter']) ? max(1, (int) $args['counter']) : 1;
         $outcome      = (isset($args['outcome']) && 'failure' === $args['outcome']) ? 'failure' : 'success';
         if (function_exists('devdacti_db_guard_active') && devdacti_db_guard_active() && devdacti_db_guard_failed()) {
@@ -300,7 +306,27 @@ function devdacti_log_aggregated(array $args)
     $subject   = devdacti_substr(devdacti_redact(isset($args['subject']) ? (string) $args['subject'] : ''), 0, 191);
     $ip_exact  = isset($args['ip_exact']) ? (string) $args['ip_exact'] : '';
     $hour      = gmdate('Y-m-d H:00:00');
-    $scope     = devdacti_bucket_scope($action, devdacti_ip_fingerprint($ip_exact), $hour);
+    $fp        = devdacti_ip_fingerprint($ip_exact);
+    // Security review 2026-10-19 (L2): a site-wide ceiling per action and hour. Past 500 distinct sources in one hour
+    // (a distributed attack) every further source folds into ONE "many sources" bucket per hour, so the log grows by
+    // one row, not by the attacker's address count. The per-source cap below stays as it was.
+    $ceiling   = isset($args['max_rows']) && (int) $args['max_rows'] > 0 ? 500 : 0;
+    if ($ceiling > 0) {
+        $seen_key = 'devdacti_srcs_' . $action . '_' . md5($hour);
+        $seen     = get_transient($seen_key);
+        $seen     = is_array($seen) ? $seen : array();
+        if (!isset($seen[$fp])) {
+            if (count($seen) >= $ceiling) {
+                $fp = 'many-sources';
+                $subject = isset($args['overflow_subject']) ? (string) $args['overflow_subject'] : $subject;
+                $args['details'] = isset($args['overflow_details']) ? (string) $args['overflow_details'] : (isset($args['details']) ? $args['details'] : '');
+            } else {
+                $seen[$fp] = 1;
+                set_transient($seen_key, $seen, 2 * HOUR_IN_SECONDS);
+            }
+        }
+    }
+    $scope     = devdacti_bucket_scope($action, $fp, $hour);
     $key       = devdacti_bucket_key($scope, $subject);
 
     $row = array(
@@ -518,6 +544,14 @@ function devdacti_ip_fingerprint($exact_ip)
     if ($exact_ip === '') {
         return 'no-ip';
     }
+    // Security review 2026-10-19 (L2): an IPv6 source is fingerprinted on its /64, so one client rotating addresses
+    // inside its prefix is one source (one row cap), not a fresh source per address.
+    if (false !== filter_var($exact_ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
+        $packed = @inet_pton($exact_ip);
+        if (false !== $packed && 16 === strlen($packed)) {
+            $exact_ip = inet_ntop(substr($packed, 0, 8) . str_repeat("\0", 8)) . '/64';
+        }
+    }
     $key = function_exists('wp_salt') ? (string) wp_salt('auth') : 'devdacti-fallback-key';
     return hash_hmac('sha256', $exact_ip, $key);
 }
@@ -705,6 +739,26 @@ function devdacti_actions_catalog()
         ),
         'settings' => array(
             'option_updated' => __('Setting updated', 'devdome-activity-log'),
+        ),
+        // 1.0.4: terms, menus, widgets, Customizer and third-party plugins. Each group is a switch on the Settings tab.
+        'taxonomy' => array(
+            'term_created' => __('Term created', 'devdome-activity-log'),
+            'term_updated' => __('Term updated', 'devdome-activity-log'),
+            'term_deleted' => __('Term deleted', 'devdome-activity-log'),
+        ),
+        'appearance' => array(
+            'menu_created'     => __('Menu created', 'devdome-activity-log'),
+            'menu_updated'     => __('Menu updated', 'devdome-activity-log'),
+            'menu_deleted'     => __('Menu deleted', 'devdome-activity-log'),
+            'widgets_updated'  => __('Widgets updated', 'devdome-activity-log'),
+            'customizer_saved' => __('Customizer saved', 'devdome-activity-log'),
+        ),
+        'integrations' => array(
+            'woo_order_status_changed' => __('WooCommerce order status changed', 'devdome-activity-log'),
+            'woo_settings_saved'       => __('WooCommerce settings saved', 'devdome-activity-log'),
+            'acf_field_group_saved'    => __('ACF field group saved', 'devdome-activity-log'),
+            'acf_field_group_deleted'  => __('ACF field group deleted', 'devdome-activity-log'),
+            'yoast_settings_saved'     => __('Yoast SEO settings saved', 'devdome-activity-log'),
         ),
         // The audit group is NEVER suppressible: these are the records of the log changing
         // itself, and a policy able to hide them would make every other row unfalsifiable.

@@ -10,6 +10,7 @@ defined('WP_UNINSTALL_PLUGIN') || exit;
 /** Per-site cleanup (called once per site on multisite, or once on single-site). */
 function devdacti_uninstall_site()
 {
+    delete_transient('devdacti_activation_redirect'); // the first-activation redirect flag (60 s), gone anyway
     global $wpdb;
     $p = $wpdb->prefix . 'devdacti_';
 

@@ -152,6 +152,10 @@ function devdacti_each_site($callback, $batch = 100)
 
 function devdacti_activate($network_wide = false)
 {
+    // First activation only: the next admin page load opens this plugin's screen (never network-wide, never WP-CLI).
+    if (empty($network_wide) && !(defined('WP_CLI') && WP_CLI)) {
+        set_transient('devdacti_activation_redirect', 1, 60);
+    }
     // Network-wide multisite activation: run the per-site install on every site
     // (mirrors the switch_to_blog() loop in uninstall.php so the lifecycle is symmetric).
     if (is_multisite() && $network_wide) {

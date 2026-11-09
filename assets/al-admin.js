@@ -261,8 +261,8 @@
     var exportLink = document.getElementById('al-export');
     var userDd = app.querySelector('.dd-dd[data-name="al_user"]');
 
-    var FILTER_KEYS = ['user', 'group', 'action', 'object_type', 'severity', 'from', 'to', 'search'];
-    var DD_KEYS = { user: 'al_user', group: 'al_group', action: 'al_action', object_type: 'al_object_type', severity: 'al_severity' };
+    var FILTER_KEYS = ['user', 'group', 'action', 'object_type', 'severity', 'channel', 'from', 'to', 'search'];
+    var DD_KEYS = { user: 'al_user', group: 'al_group', action: 'al_action', object_type: 'al_object_type', severity: 'al_severity', channel: 'al_channel' };
     var ACTION_GROUPS = CFG.actionGroups || {}; // action => group
     /** Group and Action never contradict each other: an action belongs to one group. */
     function reconcileGroupAction() {
@@ -270,7 +270,7 @@
     }
     var PER_CHOICES = [10, 20, 50, 100]; // the server clamps per_page at 100 (devdacti_query_limits)
     var MAX_PAGE = 1000; // the server refuses a page past this (devdacti_query_limits)
-    var DEFAULTS = { page: 1, per: parseInt(CFG.perPage, 10) || 20, user: 0, group: '', action: '', object_type: '', severity: '', from: '', to: '', search: '' };
+    var DEFAULTS = { page: 1, per: parseInt(CFG.perPage, 10) || 20, user: 0, group: '', action: '', object_type: '', severity: '', channel: '', from: '', to: '', search: '' };
     var state = {};
     var pages = 1;
     var seq = 0;

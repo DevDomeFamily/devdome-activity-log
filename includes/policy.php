@@ -266,13 +266,34 @@ function devdacti_request_channel()
         return 'xmlrpc';
     }
     if (defined('REST_REQUEST') && REST_REQUEST) {
-        return 'rest';
+        // An Abilities API call (WordPress 6.9+, the MCP adapter) is its own origin: an AI agent acted (1.0.4).
+        $route = isset($GLOBALS['wp']->query_vars['rest_route']) ? (string) $GLOBALS['wp']->query_vars['rest_route'] : '';
+        return (strpos($route, '/wp-abilities/') === 0) ? 'abilities' : 'rest';
     }
     if (defined('DOING_AJAX') && DOING_AJAX) {
         return 'ajax';
     }
     return 'web';
 }
+
+/** The channels a row can carry, for the filter dropdown and the abilities schema (1.0.4). */
+function devdacti_channels()
+{
+    return array('web', 'ajax', 'rest', 'abilities', 'xmlrpc', 'cron', 'cli', 'app_password');
+}
+
+/** The name of the application password this request authenticated with, or '' (1.0.4). */
+function devdacti_app_password_name()
+{
+    return isset($GLOBALS['devdacti_app_password_name']) ? (string) $GLOBALS['devdacti_app_password_name'] : '';
+}
+
+function devdacti_remember_app_password($user, $item)
+{
+    $name = (is_array($item) && isset($item['name'])) ? sanitize_text_field((string) $item['name']) : '';
+    $GLOBALS['devdacti_app_password_name'] = devdacti_substr($name, 0, 60);
+}
+add_action('application_password_did_authenticate', 'devdacti_remember_app_password', 10, 2);
 
 /** user | system (cron/CLI) | anonymous. */
 function devdacti_actor_type($user_id)
@@ -304,6 +325,7 @@ function devdacti_value_labels()
         'web'          => __('Web', 'devdome-activity-log'),
         'ajax'         => __('Admin AJAX', 'devdome-activity-log'),
         'rest'         => __('REST API', 'devdome-activity-log'),
+        'abilities'    => __('Abilities API (AI agent)', 'devdome-activity-log'),
         'xmlrpc'       => __('XML-RPC', 'devdome-activity-log'),
         'cron'         => __('Scheduled task', 'devdome-activity-log'),
         'cli'          => __('WP-CLI', 'devdome-activity-log'),

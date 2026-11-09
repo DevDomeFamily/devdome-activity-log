@@ -20,7 +20,7 @@ function devdacti_skip_post($post)
         return true;
     }
 
-    $skip_types = array('revision', 'attachment', 'nav_menu_item', 'customize_changeset', 'oembed_cache');
+    $skip_types = array('revision', 'attachment', 'nav_menu_item', 'customize_changeset', 'oembed_cache', 'acf-field-group', 'acf-field'); // ACF field groups have their own events (1.0.4)
     if (in_array($post->post_type, $skip_types, true) || strpos($post->post_type, 'wp_template') === 0) {
         return true;
     }

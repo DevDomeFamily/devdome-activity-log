@@ -3,7 +3,7 @@
 Plugin Name: DevDome Activity Log: Track WordPress User Activity
 Plugin URI: https://devdome.com/
 Description: A local audit log of logins, content, user, plugin, theme, media, comment and key-setting changes, with atomic failed-login counting and an honest coverage list. Part of the DevDome suite.
-Version: 1.0.2
+Version: 1.0.3
 Author: DevDome
 Author URI: https://devdome.com
 Text Domain: devdome-activity-log
@@ -23,7 +23,7 @@ if (file_exists(__DIR__ . '/wporg-build.php')) {
     require __DIR__ . '/wporg-build.php';
 }
 
-define('DEVDACTI_VERSION', '1.0.2');
+define('DEVDACTI_VERSION', '1.0.3');
 // Storage schema revision. Bumped whenever the events/settings tables change; the migration
 // runner in includes/install.php re-applies the schema on a normal update, not only on activation.
 define('DEVDACTI_SCHEMA', 3);
@@ -45,6 +45,23 @@ add_filter('query', 'devdacti_db_guard_record', 1);
 require_once DEVDACTI_DIR . 'includes/settings.php';
 require_once DEVDACTI_DIR . 'includes/install.php';
 require_once DEVDACTI_DIR . 'includes/helpers.php';
+
+// Site Health item 32 (22 Oct 2026): failed logins in the last 24 h for the devdome.com Site Health page. A count
+// only; rides the suite's consented inventory (core devdcorev1_care_payload), nothing else leaves the site.
+add_filter('devdcorev1_care', function ($care) {
+    global $wpdb;
+    if (!is_array($care) || !function_exists('devdacti_events_table')) {
+        return $care;
+    }
+    $since = gmdate('Y-m-d H:i:s', time() - DAY_IN_SECONDS);
+    // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- own prefixed table, one count per status check
+    $n = $wpdb->get_var($wpdb->prepare('SELECT COUNT(*) FROM ' . devdacti_events_table() . ' WHERE action = %s AND created_at >= %s', 'login_failed', $since));
+    if (null !== $n && '' === (string) $wpdb->last_error) {
+        $care['failed_logins_24h'] = (int) $n;
+        $care['failed_logins_source'] = 'devdome-activity-log';
+    }
+    return $care;
+});
 require_once DEVDACTI_DIR . 'includes/policy.php';
 require_once DEVDACTI_DIR . 'includes/proxy.php';
 require_once DEVDACTI_DIR . 'includes/privacy.php';
@@ -52,6 +69,8 @@ require_once DEVDACTI_DIR . 'includes/tracker-auth.php';
 require_once DEVDACTI_DIR . 'includes/tracker-content.php';
 require_once DEVDACTI_DIR . 'includes/tracker-system.php';
 require_once DEVDACTI_DIR . 'includes/tracker-users.php';
+require_once DEVDACTI_DIR . 'includes/tracker-site.php'; // terms, menus, widgets, Customizer (1.0.4)
+require_once DEVDACTI_DIR . 'includes/tracker-integrations.php'; // WooCommerce, ACF, Yoast (1.0.4)
 require_once DEVDACTI_DIR . 'includes/rest.php';
 require_once DEVDACTI_DIR . 'includes/abilities.php'; // WordPress Abilities API (6.9+): registers nothing on older versions
 
@@ -225,6 +244,21 @@ add_filter('devdcorev1_suite_report_sections', function ($s) {
 // on an explicit Connect click. The shim only ever existed to patch a gap in core 1.3.8, and
 // it wrote/deleted devdome_connected_at, which is DevDome Analytics' stamp.)
 
+// First activation (install.php sets the transient): open this plugin's screen once, the DevDome Account card
+// when the site is not linked yet. Bulk activation, AJAX, cron and WP-CLI never redirect.
+add_action('admin_init', function () {
+    if (!get_transient('devdacti_activation_redirect')) {
+        return;
+    }
+    delete_transient('devdacti_activation_redirect');
+    // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only: a bulk activation never redirects.
+    if (isset($_GET['activate-multi']) || wp_doing_ajax() || wp_doing_cron() || (defined('WP_CLI') && WP_CLI) || !current_user_can('activate_plugins')) {
+        return;
+    }
+    $connected = function_exists('devdcorev1_account_is_connected') && devdcorev1_account_is_connected();
+    wp_safe_redirect($connected ? admin_url('admin.php?page=' . 'devdome-activity-log') : admin_url('admin.php?page=' . 'devdome-activity-log' . '&al_tab=settings#settings'));
+    exit;
+});
 register_activation_hook(__FILE__, 'devdacti_activate');
 register_deactivation_hook(__FILE__, 'devdacti_deactivate');
 

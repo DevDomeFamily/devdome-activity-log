@@ -74,6 +74,12 @@ function devdacti_object_type_label($type)
         'comment'    => __('Comment', 'devdome-activity-log'),
         'session'    => __('Session', 'devdome-activity-log'),
         'policy'     => __('Activity Log policy', 'devdome-activity-log'),
+        'term'        => __('Category or tag', 'devdome-activity-log'),
+        'menu'        => __('Menu', 'devdome-activity-log'),
+        'widget_area' => __('Widget area', 'devdome-activity-log'),
+        'customizer'  => __('Customizer', 'devdome-activity-log'),
+        'order'       => __('WooCommerce order', 'devdome-activity-log'),
+        'field_group' => __('ACF field group', 'devdome-activity-log'),
     );
     $type = (string) $type;
     return isset($labels[$type]) ? $labels[$type] : $type;
@@ -82,7 +88,7 @@ function devdacti_object_type_label($type)
 /** The valid object (subject) types an event row can carry. */
 function devdacti_object_types()
 {
-    return array('post', 'attachment', 'user', 'plugin', 'theme', 'core', 'option', 'comment', 'session', 'policy');
+    return array('post', 'attachment', 'user', 'plugin', 'theme', 'core', 'option', 'comment', 'session', 'policy', 'term', 'menu', 'widget_area', 'customizer', 'order', 'field_group');
 }
 
 /** Severity ladder, low to high. */
@@ -102,6 +108,9 @@ function devdacti_group_labels()
         'media'    => __('Media', 'devdome-activity-log'),
         'comments' => __('Comments', 'devdome-activity-log'),
         'settings' => __('Settings', 'devdome-activity-log'),
+        'taxonomy'     => __('Categories & tags', 'devdome-activity-log'),
+        'appearance'   => __('Menus, widgets & Customizer', 'devdome-activity-log'),
+        'integrations' => __('WooCommerce, ACF & Yoast', 'devdome-activity-log'),
         'audit'    => __('Activity Log itself', 'devdome-activity-log'),
     );
 }
@@ -220,6 +229,10 @@ function devdacti_validate_query(array $f)
     if ('' !== $severity && !in_array($severity, devdacti_severities(), true)) {
         $errors[] = array('code' => 'severity', 'message' => __('That severity does not exist.', 'devdome-activity-log'));
     }
+    $channel = isset($f['channel']) ? sanitize_key((string) $f['channel']) : '';
+    if ('' !== $channel && !in_array($channel, devdacti_channels(), true)) {
+        $errors[] = array('code' => 'channel', 'message' => __('That request channel does not exist.', 'devdome-activity-log'));
+    }
 
     return $errors;
 }
@@ -317,6 +330,12 @@ function devdacti_query_events(array $f)
     if ($severity !== '' && in_array($severity, devdacti_severities(), true)) {
         $where[] = 'severity = %s';
         $params[] = $severity;
+    }
+    // Change origin (1.0.4): where the request came from.
+    $channel = isset($f['channel']) ? sanitize_key((string) $f['channel']) : '';
+    if ($channel !== '' && in_array($channel, devdacti_channels(), true)) {
+        $where[] = 'channel = %s';
+        $params[] = $channel;
     }
     if (!empty($f['severity_in']) && is_array($f['severity_in'])) {
         $list = array_values(array_intersect($f['severity_in'], devdacti_severities()));
@@ -439,6 +458,7 @@ function devdacti_rest_events(WP_REST_Request $request)
         'action'      => (string) $request->get_param('action'),
         'object_type' => (string) $request->get_param('object_type'),
         'severity'    => (string) $request->get_param('severity'),
+        'channel'     => (string) $request->get_param('channel'), // change origin (1.0.4)
         'from'        => (string) $request->get_param('from'),
         'to'          => (string) $request->get_param('to'),
         'search'      => (string) $request->get_param('search'),

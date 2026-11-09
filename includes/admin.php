@@ -267,6 +267,9 @@ function devdacti_inline_css()
         .dd-app .al-status.is-critical { border-color:#fecaca; background:#ef4444; }
         .dd-app .al-status.is-unknown { border-color:#e5e7eb; background:#9ca3af; }
         .dd-app #al-verdict .dd-stats { margin-top:22px; }
+        /* DESIGN.md 32: hero number tiles, ONE size in every plugin (Backup & Migration 1.0.1 = the reference, owner 5 Nov 2026). */
+        .dd-app .dd-stats { gap:16px; } .dd-app .dd-stats .dd-stat { padding:14px 12px; } .dd-app .dd-stats .dd-stat-num { font-size:24px; line-height:24px; font-weight:700; }
+        .dd-app .dd-stats .dd-stat-lbl { font-size:12px; line-height:16px; margin-top:6px; color:#374151; } .dd-app .dd-stats .dd-stat-sub { font-size:11px; line-height:1.5; margin-top:2px; color:#374151; }
         .dd-app .al-stats-4 { grid-template-columns:repeat(4,minmax(0,1fr)); }
         @media (max-width:900px) { .dd-app .al-stats-4 { grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); } }
         /* Data lists = DESIGN.md section 19 (.dd-list): the Analytics dashboard table, 1:1. */
@@ -468,7 +471,7 @@ function devdacti_posted_policy(array $post)
         'excluded_roles'   => $roles,
         'excluded_users'   => array_values(array_unique($users)),
     );
-    foreach (array('auth', 'content', 'plugins', 'users', 'media', 'comments', 'settings') as $group) {
+    foreach (array('auth', 'content', 'plugins', 'users', 'media', 'comments', 'settings', 'taxonomy', 'appearance', 'integrations') as $group) {
         $values['group_' . $group] = empty($post['al_group_' . $group]) ? 0 : 1;
     }
 
@@ -1244,6 +1247,10 @@ function devdacti_render_log()
     foreach (devdacti_severities() as $sev) {
         $sevs[$sev] = devdacti_value_label($sev);
     }
+    $channels = array('' => __('Any origin', 'devdome-activity-log'));
+    foreach (devdacti_channels() as $ch) {
+        $channels[$ch] = devdacti_value_label($ch);
+    }
     ?>
     <div class="max-w-5xl px-6 pt-3 pb-6" id="al-log">
         <p class="al-intro"><?php esc_html_e('Everyone who can open this screen can read every recorded event, including usernames and IP addresses. Events are deleted automatically once they pass the retention window set on the Settings tab.', 'devdome-activity-log'); ?></p>
@@ -1254,6 +1261,7 @@ function devdacti_render_log()
             devdacti_render_dropdown('al_action', array('' => __('Any action', 'devdome-activity-log')) + $actions, __('Action', 'devdome-activity-log'));
             devdacti_render_dropdown('al_object_type', $types, __('Object Type', 'devdome-activity-log'));
             devdacti_render_dropdown('al_severity', $sevs, __('Severity', 'devdome-activity-log'));
+            devdacti_render_dropdown('al_channel', $channels, __('Origin', 'devdome-activity-log'));
             ?>
         </div>
         <div class="al-toolbar-row">
@@ -1398,6 +1406,9 @@ function devdacti_render_settings()
         'media'    => array(__('Media', 'devdome-activity-log'), __('Media uploads and deletions.', 'devdome-activity-log')),
         'comments' => array(__('Comments', 'devdome-activity-log'), __('Comment status changes: approved, spammed, trashed, restored.', 'devdome-activity-log')),
         'settings' => array(__('Settings', 'devdome-activity-log'), __('Changes to a short allowlist of important site options.', 'devdome-activity-log')),
+        'taxonomy'     => array(__('Categories And Tags', 'devdome-activity-log'), __('Terms of every taxonomy created, renamed, moved or deleted.', 'devdome-activity-log')),
+        'appearance'   => array(__('Menus, Widgets And Customizer', 'devdome-activity-log'), __('Navigation menus created, saved or deleted, widget areas changed, Customizer saves.', 'devdome-activity-log')),
+        'integrations' => array(__('WooCommerce, ACF And Yoast', 'devdome-activity-log'), __('Order status changes and settings saves in WooCommerce, ACF field groups saved or deleted, Yoast SEO settings saved. Nothing is recorded when a plugin is not installed.', 'devdome-activity-log')),
     );
     $protected_groups = devdacti_protected_groups();
     $retention_status = devdacti_retention_status();
